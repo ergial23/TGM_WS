@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Start sensor_model_node -->
+  <node name="sensor_model_node" pkg="sensor_model" type="sensor_model_node" output="screen" >
+    	
+  </node>
+
+  <!-- Play bag file -->
+  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-r 1 /home/ericga/MASTER_THESIS/TGM_WS/bags/test1.bag">
+    
+  </node>
+
+  <!-- Launch RViz for visualization -->
+  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" >
+	
+    <!-- Add any RViz configuration files, e.g., -->
+    <!-- <rosparam command="load" file="$(find your_package_name)/config/rviz_config_file.rviz"/> -->
+  </node>
+ <!-- Load params from yaml file -->
+ <rosparam command="load" file="$(find sensor_model)/params/sensor_model_params.yaml"/>
+</launch>
+
