@@ -1,4 +1,0 @@
-[35m[1mScanning dependencies of target sensor_model_node[0m
-[ 50%] [32mBuilding CXX object CMakeFiles/sensor_model_node.dir/src/sensor_model_node.cpp.o[0m
-[100%] [32m[1mLinking CXX executable sensor_model_node[0m
-[100%] Built target sensor_model_node
