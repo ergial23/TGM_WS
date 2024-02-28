@@ -6,11 +6,23 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf2_ros
+  sensor_msgs
+  nav_msgs
+  pcl_ros
 )
-
 catkin_package()
 
-include_directories(${catkin_INCLUDE_DIRS})
+find_package(PCL REQUIRED)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+)
+
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 add_executable(sensor_model_node src/sensor_model_node.cpp)
-target_link_libraries(sensor_model_node ${catkin_LIBRARIES})
+
+target_include_directories(sensor_model_node PUBLIC ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
+target_link_libraries(sensor_model_node ${catkin_LIBRARIES} ${PCL_LIBRARIES})

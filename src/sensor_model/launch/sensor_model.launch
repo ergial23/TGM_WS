@@ -1,22 +1,24 @@
 <?xml version="1.0"?>
 <launch>
-  <!-- Start sensor_model_node -->
-  <node name="sensor_model_node" pkg="sensor_model" type="sensor_model_node" output="screen" >
-    	
-  </node>
+
+  <!-- Public static transform -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="static_transform_publisher" output="screen" args="0 0 2 0 0 0 map os_sensor" required="true"/>
 
   <!-- Play bag file -->
-  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-r 1 /home/ericga/MASTER_THESIS/TGM_WS/bags/test1.bag">
-    
+  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 1 /home/ericga/MASTER_THESIS/TGM_WS/bags/static.bag">
   </node>
+  
+  <!-- Start sensor_model_node -->
+  <node name="sensor_model_node" pkg="sensor_model" type="sensor_model_node" output="screen">
+    <rosparam file="$(find sensor_model)/params/preprocessing.yaml" />
+</node>
 
+    
   <!-- Launch RViz for visualization -->
-  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" >
-	
-    <!-- Add any RViz configuration files, e.g., -->
-    <!-- <rosparam command="load" file="$(find your_package_name)/config/rviz_config_file.rviz"/> -->
-  </node>
- <!-- Load params from yaml file -->
- <rosparam command="load" file="$(find sensor_model)/params/sensor_model_params.yaml"/>
+  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" args="-d $(find sensor_model)/config/preprocessing_config.rviz" />
+    
+
 </launch>
+
+
 
