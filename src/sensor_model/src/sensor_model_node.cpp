@@ -7,7 +7,10 @@
 // Outlier removal
 #include <pcl_ros/filters/radius_outlier_removal.h>
 #include <pcl_ros/filters/statistical_outlier_removal.h>
+#include <pcl_ros/filters/crop_box.h>
 #include <pcl_ros/filters/passthrough.h>
+
+
 
 //Downsampling 
 #include <pcl_ros/filters/voxel_grid.h>
@@ -42,6 +45,9 @@ public:
     // Functions
     void printParameters(const sensor_msgs::PointCloud2::ConstPtr& msg);
     void voxelDownsampling(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
+    void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
+    void radiousOutlierRemoval(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
+    void cropBoxFilter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
     void loadParameters();
 
     // Callback function for the point cloud subscriber
@@ -49,12 +55,16 @@ public:
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
         pcl::fromROSMsg(*msg, *cloud);
 
-        
         // Apply the filters
-        voxelDownsampling(cloud);
+        //statisticalOutlierRemoval(cloud);
+        
+        cropBoxFilter(cloud);
+        //radiousOutlierRemoval(cloud);
+        //voxelDownsampling(cloud);
+        
 
         // Update the header information
-        cloud->header = pcl_conversions::toPCL(msg->header);
+        //cloud->header = pcl_conversions::toPCL(msg->header);
 
         sensor_msgs::PointCloud2 cloud_msg;
         pcl::toROSMsg(*cloud, cloud_msg);
@@ -79,17 +89,66 @@ void SensorModel::loadParameters(){
             lowerlim_voxel = -5.0;  // Set a default value
         }
 
-}                            
+}      
+void SensorModel::cropBoxFilter(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
+    // Create the filter
+    pcl::CropBox<pcl::PointXYZRGB> crop_box;
+
+    // Set input cloud
+    crop_box.setInputCloud(cloud);
+
+    // Set the region of interest (ROI) 
+    Eigen::Vector4f min_pt(-30.0, -30.0, -2.0, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f max_pt(30.0, 30.0, 2.0, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
+    crop_box.setMin(min_pt);
+    crop_box.setMax(max_pt);
+    // Filter the cloud
+    crop_box.filter(*cloud);
+
+    Eigen::Vector4f min_pt2(-2.0, -1.0, -0.5, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f max_pt2(0.0, 1.0, 0, 1.0);      // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
+    crop_box.setMin(min_pt2);
+    crop_box.setMax(max_pt2);
+    crop_box.setNegative(true);
+    
+    crop_box.filter(*cloud);
+}  
+
+          
 void SensorModel::voxelDownsampling(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
+    
     pcl::VoxelGrid<pcl::PointXYZRGB> voxel;
     voxel.setInputCloud(cloud);
     voxel.setFilterFieldName("z");
     voxel.setFilterLimits(lowerlim_voxel,upperlim_voxel);
+    // size of the voxels after downsampling
     voxel.setLeafSize(leaf_size, leaf_size, leaf_size);
     voxel.setFilterLimitsNegative(false);
     voxel.filter(*cloud);
 }
 
+void SensorModel::statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud){
+    
+    pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> outlier_filter;
+    outlier_filter.setInputCloud(cloud);
+    // Set the number of nearest neighbors to use for mean distance estimation
+    outlier_filter.setMeanK(50);
+    // standard deviation multiplier for the distance threshold calculation.
+    // The distance threshold will be equal to: mean + stddev_mult * stddev.
+    // points will be classified as inlier or outlier if their average neighbor distance is below or above this threshold respectively.
+    outlier_filter.setStddevMulThresh(1.0);
+    outlier_filter.filter(*cloud);
+    
+}
+void SensorModel::radiousOutlierRemoval(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
+{
+    // Create the radius outlier removal object and set the parameters
+    pcl::RadiusOutlierRemoval<pcl::PointXYZRGB> outlier_filter;
+    outlier_filter.setInputCloud(cloud);
+    outlier_filter.setRadiusSearch(2);  // Adjust the radius based on your specific requirements
+    outlier_filter.setMinNeighborsInRadius(4);  // Adjust as needed
+    outlier_filter.filter(*cloud);
+}
 
 void SensorModel::printParameters(const sensor_msgs::PointCloud2::ConstPtr& msg) {
     // Accessing and printing the fields
