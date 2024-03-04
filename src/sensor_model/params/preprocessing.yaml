@@ -1,5 +1,17 @@
 
 ##### VOXEL DOWNSAMPLING #####
 leaf_size : 0.2
-upperlim_voxel : 4.0
-lowerlim_voxel : -1.7
+
+
+######### CROP BOX  #########
+cropbox_size : 30.0
+upperlim_height : 2
+lowerlim_height : -2.5
+
+#STATISTICAL OUTLIER REMOVAL#
+meanK : 50.0 #number of nearest neighbors to use for mean distance estimation
+StddevMulThresh : 1.0 #The distance threshold will be equal to: mean + stddev_mult * stddev.
+
+###RADIOUS OUTLIER REMOVAL###
+NeighborsInRadius : 4
+RadiusSearch : 0.5
