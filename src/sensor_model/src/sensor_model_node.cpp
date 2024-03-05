@@ -66,8 +66,8 @@ public:
     void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr inliers_plane);
-    void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals);
+    void groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr roi_indices,pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
     void loadParameters();
 
     // Callback function for the point cloud subscriber
@@ -84,12 +84,9 @@ public:
         //statisticalOutlierRemoval(cloud);
         // radiusOutlierRemoval(cloud);
         //voxelDownsampling(cloud);
-        pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
-        computeNormals(cloud, cloud_normals);
-
-        pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
+        
         // Remove Plane Surface
-        groundRemoval(cloud, cloud_normals, inliers_plane);
+        groundRemoval(cloud);
         
 
         // Update the header information
@@ -275,50 +272,76 @@ void SensorModel::statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr 
     // Update the original cloud with the filtered points
     cloud->swap(*filtered_cloud);
 }
-void SensorModel::computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
-  {
+void SensorModel::computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr roi_indices,pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi)
+{
+    // Define the Region of Interest (Bounding Box)
+    Eigen::Vector4f minPoint;
+    Eigen::Vector4f maxPoint;
+    minPoint << -30, -30, -3, 1.0;
+    maxPoint << 30, 30, -1.5, 1.0;
+
+    // Crop the input cloud based on the defined bounding box (ROI)
+    pcl::PointCloud<pcl::PointXYZ>::Ptr roi_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::CropBox<pcl::PointXYZ> crop_box_filter;
+    crop_box_filter.setInputCloud(cloud);
+    crop_box_filter.setMin(minPoint);
+    crop_box_filter.setMax(maxPoint);
+    crop_box_filter.filter(roi_indices->indices);
+
+    // Extract the ROI points using the computed indices
+    
+    pcl::ExtractIndices<pcl::PointXYZ> extract_indices;
+    extract_indices.setInputCloud(cloud);
+    extract_indices.setIndices(roi_indices);
+    extract_indices.filter(*cloud_roi);
+
+    // Compute normals for the ROI cloud
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
     ne.setSearchMethod(tree);
-    ne.setInputCloud(cloud);
-    // Set the number of k nearest neighbors to use for the feature estimation.
+    ne.setInputCloud(cloud_roi);
     ne.setKSearch(50);
-    
     ne.compute(*cloud_normals);
-  }
+}
 
-void SensorModel::groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr inliers_plane){
-  {
+void SensorModel::groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointIndices::Ptr roi_indices(new pcl::PointIndices);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi(new pcl::PointCloud<pcl::PointXYZ>);
+
+    // Compute normals for the ROI cloud and get original indices
+    computeNormals(cloud, cloud_normals, roi_indices,cloud_roi);
+
     // Find Plane
     pcl::SACSegmentationFromNormals<pcl::PointXYZ, pcl::Normal> segmentor;
     segmentor.setOptimizeCoefficients(true);
     segmentor.setModelType(pcl::SACMODEL_NORMAL_PLANE);
     segmentor.setMethodType(pcl::SAC_RANSAC);
-    Eigen::Vector3f axis = Eigen::Vector3f(0.0,0.0,1.0);
+    Eigen::Vector3f axis = Eigen::Vector3f(0.0, 0.0, 1.0);
     segmentor.setAxis(axis);
     segmentor.setMaxIterations(MaxIterations);
-    segmentor.setDistanceThreshold(DistanceThreshold);// Distance to the model threshold
-    segmentor.setEpsAngle(EpsAngle); //The maximum allowed difference between the model normal and the given axis in radians
-    segmentor.setNormalDistanceWeight(NormalDistanceWeight); //Set the relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal.
-    segmentor.setInputCloud(cloud);
+    segmentor.setDistanceThreshold(DistanceThreshold);
+    segmentor.setEpsAngle(EpsAngle);
+    segmentor.setNormalDistanceWeight(NormalDistanceWeight);
+    segmentor.setInputCloud(cloud_roi);  // Use the ROI cloud for ground removal
     segmentor.setInputNormals(cloud_normals);
-    
 
     // Output plane
+    pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
     pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
     segmentor.segment(*inliers_plane, *coefficients_plane);
 
-    /* Extract the planar inliers from the input cloud */
+    // Extract the planar inliers from the ROI cloud using original indices
     pcl::ExtractIndices<pcl::PointXYZ> extract_indices;
     extract_indices.setInputCloud(cloud);
-    extract_indices.setIndices(inliers_plane);
-    
-
-    /* Remove the planar inliers, extract the rest */
-    extract_indices.setNegative(true);
+    extract_indices.setIndices(roi_indices);
+    extract_indices.setNegative(true); 
     extract_indices.filter(*cloud);
-  }
 }
+
+
+
 
 void SensorModel::printParameters(const sensor_msgs::PointCloud2::ConstPtr& msg) {
     // Accessing and printing the fields
