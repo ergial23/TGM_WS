@@ -5,13 +5,16 @@
   <node pkg="tf2_ros" type="static_transform_publisher" name="static_transform_publisher" output="screen" args="0 0 2 0 0 0 map os_sensor" required="true"/>
 
   <!-- Play bag file -->
-  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 1 /home/ericga/MASTER_THESIS/TGM_WS/bags/static.bag">
+  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 1 /home/ericga/MASTER_THESIS/TGM_WS/bags/test1.bag">
   </node>
   
   <!-- Start sensor_model_node -->
   <node name="sensor_model_node" pkg="sensor_model" type="sensor_model_node" output="screen">
     <rosparam file="$(find sensor_model)/params/preprocessing.yaml" />
-</node>
+  </node>
+  <node name="car_publisher" pkg="rviz_visualizer" type="car_publisher" output="screen">
+   
+  </node>
 
     
   <!-- Launch RViz for visualization -->

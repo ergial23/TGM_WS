@@ -4,11 +4,14 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 // Outlier removal
-#include <pcl-1.10/pcl/filters/radius_outlier_removal.h>
-//#include <pcl_ros/filters/statistical_outlier_removal.h>
-#include <pcl-1.10/pcl/filters//crop_box.h>
-#include <pcl-1.10/pcl/filters//passthrough.h>
-#include <pcl-1.10/pcl/filters/statistical_outlier_removal.h>
+#include <pcl/filters/radius_outlier_removal.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters//crop_box.h>
+#include <pcl/filters//passthrough.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+
 
 
 
@@ -38,6 +41,10 @@ private:
     double meanK;
     double RadiusSearch;
     double NeighborsInRadius;
+    double DistanceThreshold;
+    double EpsAngle;
+    double NormalDistanceWeight;
+    double MaxIterations;
 
 public:
     ros::Publisher FilteredOccupancyGridPub;
@@ -46,7 +53,7 @@ public:
     SensorModel(): nh("~"){
         
         // Setup subscribers, publishers, etc.
-        pointCloudSub = nh.subscribe("/ouster/points", 10, &SensorModel::pointCloudCallback, this);
+        pointCloudSub = nh.subscribe("/points_raw", 10, &SensorModel::pointCloudCallback, this);
         FilteredOccupancyGridPub = nh.advertise<sensor_msgs::PointCloud2>("/pointcloud_preprocessed", 1);
 
         // Load parameters
@@ -59,21 +66,30 @@ public:
     void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    void groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr inliers_plane);
+    void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals);
     void loadParameters();
 
     // Callback function for the point cloud subscriber
     void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
-        std::vector<int> nan_indices;
+        
         
         
         // Apply the filters
         cropBoxFilter(cloud);
+        std::vector<int> nan_indices;
         pcl::removeNaNFromPointCloud(*cloud, *cloud, nan_indices);
-        statisticalOutlierRemoval(cloud);
-        radiusOutlierRemoval(cloud);
-        voxelDownsampling(cloud);
+        //statisticalOutlierRemoval(cloud);
+        // radiusOutlierRemoval(cloud);
+        //voxelDownsampling(cloud);
+        pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
+        computeNormals(cloud, cloud_normals);
+
+        pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
+        // Remove Plane Surface
+        groundRemoval(cloud, cloud_normals, inliers_plane);
         
 
         // Update the header information
@@ -122,6 +138,22 @@ void SensorModel::loadParameters(){
             ROS_ERROR("Failed to get parameter 'NeighborsInRadius'. Using default value.");
             NeighborsInRadius = 4;  // Set a default value
         }
+        if (!nh.getParam("DistanceThreshold", DistanceThreshold)) {
+            ROS_ERROR("Failed to get parameter 'DistanceThreshold'. Using default value.");
+            DistanceThreshold = 0.2;  // Set a default value
+        }
+        if (!nh.getParam("EpsAngle", EpsAngle)) {
+            ROS_ERROR("Failed to get parameter 'EpsAngle'. Using default value.");
+            EpsAngle = 0.025;  // Set a default value
+        }
+        if (!nh.getParam("NormalDistanceWeight", NormalDistanceWeight)) {
+            ROS_ERROR("Failed to get parameter 'NeighborsInRadius'. Using default value.");
+            NormalDistanceWeight = 0.2;  // Set a default value
+        }
+        if (!nh.getParam("MaxIterations", MaxIterations)) {
+            ROS_ERROR("Failed to get parameter 'MaxIterations'. Using default value.");
+            MaxIterations = 500;  // Set a default value
+        }
 
 }      
 void SensorModel::cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud){
@@ -132,8 +164,8 @@ void SensorModel::cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud){
     crop_box.setInputCloud(cloud);
 
     // Set the region of interest (ROI) 
-    Eigen::Vector4f min_pt(-cropbox_size, -cropbox_size, -3, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
-    Eigen::Vector4f max_pt(cropbox_size, cropbox_size, 2.0, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f min_pt(-cropbox_size, -cropbox_size, lowerlim_height, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f max_pt(cropbox_size, cropbox_size, upperlim_height, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
     crop_box.setMin(min_pt);
     crop_box.setMax(max_pt);
     crop_box.setKeepOrganized(true);
@@ -243,6 +275,50 @@ void SensorModel::statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr 
     // Update the original cloud with the filtered points
     cloud->swap(*filtered_cloud);
 }
+void SensorModel::computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals)
+  {
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>());
+    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+    ne.setSearchMethod(tree);
+    ne.setInputCloud(cloud);
+    // Set the number of k nearest neighbors to use for the feature estimation.
+    ne.setKSearch(50);
+    
+    ne.compute(*cloud_normals);
+  }
+
+void SensorModel::groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr inliers_plane){
+  {
+    // Find Plane
+    pcl::SACSegmentationFromNormals<pcl::PointXYZ, pcl::Normal> segmentor;
+    segmentor.setOptimizeCoefficients(true);
+    segmentor.setModelType(pcl::SACMODEL_NORMAL_PLANE);
+    segmentor.setMethodType(pcl::SAC_RANSAC);
+    Eigen::Vector3f axis = Eigen::Vector3f(0.0,0.0,1.0);
+    segmentor.setAxis(axis);
+    segmentor.setMaxIterations(MaxIterations);
+    segmentor.setDistanceThreshold(DistanceThreshold);// Distance to the model threshold
+    segmentor.setEpsAngle(EpsAngle); //The maximum allowed difference between the model normal and the given axis in radians
+    segmentor.setNormalDistanceWeight(NormalDistanceWeight); //Set the relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal.
+    segmentor.setInputCloud(cloud);
+    segmentor.setInputNormals(cloud_normals);
+    
+
+    // Output plane
+    pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
+    segmentor.segment(*inliers_plane, *coefficients_plane);
+
+    /* Extract the planar inliers from the input cloud */
+    pcl::ExtractIndices<pcl::PointXYZ> extract_indices;
+    extract_indices.setInputCloud(cloud);
+    extract_indices.setIndices(inliers_plane);
+    
+
+    /* Remove the planar inliers, extract the rest */
+    extract_indices.setNegative(true);
+    extract_indices.filter(*cloud);
+  }
+}
 
 void SensorModel::printParameters(const sensor_msgs::PointCloud2::ConstPtr& msg) {
     // Accessing and printing the fields
@@ -258,6 +334,8 @@ void SensorModel::printParameters(const sensor_msgs::PointCloud2::ConstPtr& msg)
         std::cout << "  Count: " << field.count << std::endl;
     }
 }
+
+
 
 int main(int argc, char** argv) {
     // Initialize the ROS node
