@@ -12,6 +12,7 @@
   <node name="sensor_model_node" pkg="sensor_model" type="sensor_model_node" output="screen">
     <rosparam file="$(find sensor_model)/params/preprocessing.yaml" />
   </node>
+  
   <node name="car_publisher" pkg="rviz_visualizer" type="car_publisher" output="screen">
    
   </node>
