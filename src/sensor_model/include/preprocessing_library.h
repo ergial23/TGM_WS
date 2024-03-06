@@ -18,8 +18,8 @@
 //###############
 
 //Downsampling 
-#include <pcl-1.10/pcl/filters/voxel_grid.h>
-
+#include <pcl/filters/voxel_grid.h>
+#include <random>
 class PreprocessingLibrary {
 private:
     double leaf_size;
@@ -34,6 +34,7 @@ private:
     double EpsAngle;
     double NormalDistanceWeight;
     double MaxIterations;
+    double NumSeeds;
     ros::NodeHandle nh;
 
 public:
@@ -45,7 +46,8 @@ public:
     void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    void groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+    void groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr roi_indices,pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
 
 };

@@ -16,8 +16,11 @@ StddevMulThresh : 1.0 #The distance threshold will be equal to: mean + stddev_mu
 NeighborsInRadius : 4
 RadiusSearch : 0.5
 
-###NORMALS GROUND REMOVAL###
+#######GROUND REMOVAL#######
+MaxIterations : 500 
 DistanceThreshold : 0.2 #  Distance to the model threshold
+# surface normals seed
 EpsAngle : 0.01 #The maximum allowed difference between the model normal and the given axis in radians
 NormalDistanceWeight : 0 #Set the relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal.
-MaxIterations : 500 
+# random sample seed
+NumSeeds : 100

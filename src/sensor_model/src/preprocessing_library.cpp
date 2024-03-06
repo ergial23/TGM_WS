@@ -12,7 +12,8 @@ void PreprocessingLibrary::processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr
     voxelDownsampling(cloud);
     //radiusOutlierRemoval(cloud);
     //statisticalOutlierRemoval(cloud);
-    groundRemoval(cloud);
+    //groundRemovalNormalSeeds(cloud);
+    groundRemovalRandomSeeds(cloud);
 
 }
 void PreprocessingLibrary::loadParameters(){
@@ -63,6 +64,10 @@ void PreprocessingLibrary::loadParameters(){
     if (!nh.getParam("sensor_model_node/MaxIterations", MaxIterations)) {
         ROS_ERROR("Failed to get parameter 'MaxIterations'. Using default value.");
         MaxIterations = 500;  // Set a default value
+    }
+    if (!nh.getParam("sensor_model_node/NumSeeds", NumSeeds)) {
+        ROS_ERROR("Failed to get parameter 'NumSeeds'. Using default value.");
+        NumSeeds = 100;  // Set a default value
     }
 
 }      
@@ -217,7 +222,7 @@ void PreprocessingLibrary::computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cl
     ne.compute(*cloud_normals);
 }
 
-void PreprocessingLibrary::groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+void PreprocessingLibrary::groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {   std::vector<int> nan_indices;
     pcl::removeNaNFromPointCloud(*cloud, *cloud, nan_indices);
     pcl::PointCloud<pcl::Normal>::Ptr cloud_normals(new pcl::PointCloud<pcl::Normal>);
@@ -251,6 +256,58 @@ void PreprocessingLibrary::groundRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
     extract_indices.setInputCloud(cloud);
     extract_indices.setIndices(roi_indices);
     extract_indices.setNegative(true); 
+    extract_indices.filter(*cloud);
+}
+
+
+void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+{
+    std::vector<int> nan_indices;
+    pcl::removeNaNFromPointCloud(*cloud, *cloud, nan_indices);
+    pcl::PointIndices::Ptr roi_indices(new pcl::PointIndices);
+
+    // Define the Region of Interest (Bounding Box)
+    Eigen::Vector4f minPoint;
+    Eigen::Vector4f maxPoint;
+    minPoint << -30, -30, -3, 1.0;
+    maxPoint << 30, 30, -1.5, 1.0;
+
+    // Crop the input cloud based on the defined bounding box (ROI)
+    pcl::PointCloud<pcl::PointXYZ>::Ptr roi_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::CropBox<pcl::PointXYZ> crop_box_filter;
+    crop_box_filter.setInputCloud(cloud);
+    crop_box_filter.setMin(minPoint);
+    crop_box_filter.setMax(maxPoint);
+    crop_box_filter.filter(roi_indices->indices);
+
+    // Find Plane with Random Seeds
+    pcl::SACSegmentation<pcl::PointXYZ> segmentor;
+    segmentor.setOptimizeCoefficients(true);
+    segmentor.setModelType(pcl::SACMODEL_PLANE);
+    segmentor.setMethodType(pcl::SAC_RANSAC);
+    segmentor.setMaxIterations(MaxIterations);
+    segmentor.setDistanceThreshold(DistanceThreshold);
+    
+    // Use random seed points from the ROI
+    std::vector<int> seed_indices(NumSeeds);  // Initialize vector with the specified number of seeds
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> distribution(0, roi_indices->indices.size() - 1);
+
+    // Select random seed points within the ROI
+    for (int i = 0; i < NumSeeds; ++i) {
+        seed_indices[i] = roi_indices->indices[distribution(gen)];
+    }
+
+    pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
+    segmentor.setIndices(boost::make_shared<std::vector<int>>(seed_indices));
+    segmentor.setInputCloud(cloud);  // Use the entire cloud for ground removal
+
+    // Extract the planar inliers from the entire cloud using original indices
+    pcl::ExtractIndices<pcl::PointXYZ> extract_indices;
+    extract_indices.setInputCloud(cloud);
+    extract_indices.setIndices(roi_indices);
+    extract_indices.setNegative(true);
     extract_indices.filter(*cloud);
 }
 
