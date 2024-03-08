@@ -48,6 +48,6 @@ public:
     void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointIndices::Ptr roi_indices,pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
+    void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
 
 };

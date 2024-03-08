@@ -1,6 +1,7 @@
 #include "preprocessing_library.h"
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <chrono>
 
 class SensorModel {
 private:
@@ -10,9 +11,12 @@ private:
 
     PreprocessingLibrary preprocessing;// Instance of the preprocessing library
 
+    int callbackCounter = 0;
+    long long totalDuration = 0;
+
 public:
     SensorModel() : nh("~"), preprocessing(nh) {
-        pointCloudSub = nh.subscribe("/points_raw", 10, &SensorModel::pointCloudCallback, this);
+        pointCloudSub = nh.subscribe("/ouster/points", 1, &SensorModel::pointCloudCallback, this);
         FilteredOccupancyGridPub = nh.advertise<sensor_msgs::PointCloud2>("/pointcloud_preprocessed", 1);
         
     }
@@ -21,7 +25,25 @@ public:
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
         
+        auto start_time = std::chrono::high_resolution_clock::now(); // Start measuring time
         preprocessing.processPointCloud(cloud);
+        auto end_time = std::chrono::high_resolution_clock::now(); // Stop measuring time
+        
+        // Calculate the duration in milliseconds
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+        
+        // Update the global variables
+        totalDuration += duration;
+        ++callbackCounter;
+
+        if (callbackCounter == 100) {
+        long long averageDuration = totalDuration / callbackCounter;
+        std::cout << "Average time taken by preprocessing.processPointCloud over "
+                  << callbackCounter << " iterations: " << averageDuration << " milliseconds" << std::endl;
+        // Reset the counter and total duration for subsequent iterations
+        callbackCounter = 0;
+        totalDuration = 0;
+    }
 
         // Update the header information
         cloud->header = pcl_conversions::toPCL(msg->header);

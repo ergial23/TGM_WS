@@ -5,7 +5,7 @@
   <node pkg="tf2_ros" type="static_transform_publisher" name="static_transform_publisher" output="screen" args="0 0 2 0 0 0 map os_sensor" required="true"/>
 
   <!-- Play bag file -->
-  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 1 /home/ericga/MASTER_THESIS/TGM_WS/bags/test1.bag">
+  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 0.8 /home/ericga/MASTER_THESIS/TGM_WS/bags/lap.bag">
   </node>
   
   <!-- Start sensor_model_node -->
@@ -17,7 +17,6 @@
    
   </node>
 
-    
   <!-- Launch RViz for visualization -->
   <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" args="-d $(find sensor_model)/config/preprocessing_config.rviz" />
     
