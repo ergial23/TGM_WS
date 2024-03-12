@@ -1,8 +1,9 @@
 #pragma once
-
+#include <iostream>
+#include <fstream>
+#include <boost/filesystem.hpp>
 #include <pcl_conversions/pcl_conversions.h>
-
-// Outlier removal
+#include <yaml-cpp/yaml.h>
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/features/normal_3d.h>
@@ -10,18 +11,14 @@
 #include <pcl/filters/crop_box.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/statistical_outlier_removal.h>
-
-//################
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
-//###############
-
-//Downsampling 
 #include <pcl/filters/voxel_grid.h>
-#include <random>
+
 class PreprocessingLibrary {
 private:
+    std::string parameters_file_name = "/home/ericga/MASTER_THESIS/TGM_WS/src/sensor_model/params/preprocessing.yaml";
     double leaf_size;
     double upperlim_height;
     double lowerlim_height;
@@ -41,6 +38,7 @@ public:
     PreprocessingLibrary(ros::NodeHandle& nh);
     
     void loadParameters();
+    void loadParameters2(const std::string& filename);
     void processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void voxelDownsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
     void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);

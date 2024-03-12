@@ -56,7 +56,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "sensor_model_node");
+    ros::init(argc, argv, "preprocessing_node");
     SensorModel sensorModel;
     
     ros::Rate r(10);
