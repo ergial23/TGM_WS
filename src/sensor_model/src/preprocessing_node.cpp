@@ -15,7 +15,7 @@ private:
     long long totalDuration = 0;
 
 public:
-    SensorModel() : nh("~"), preprocessing(nh) {
+    SensorModel() : nh("~"), preprocessing() {
         pointCloudSub = nh.subscribe("/ouster/points", 1, &SensorModel::pointCloudCallback, this);
         FilteredOccupancyGridPub = nh.advertise<sensor_msgs::PointCloud2>("/pointcloud_preprocessed", 1);
         
@@ -56,7 +56,7 @@ public:
 };
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "sensor_model_node");
+    ros::init(argc, argv, "preprocessing_node");
     SensorModel sensorModel;
     
     ros::Rate r(10);

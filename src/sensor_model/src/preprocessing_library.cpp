@@ -1,8 +1,9 @@
 #include "preprocessing_library.h"
 
 
-PreprocessingLibrary::PreprocessingLibrary(ros::NodeHandle& nh) {
-    PreprocessingLibrary::loadParameters();
+PreprocessingLibrary::PreprocessingLibrary() {
+    PreprocessingLibrary::loadParameters(parameters_file_name);
+    
 }
 
 //FUNCTIONS
@@ -16,61 +17,32 @@ void PreprocessingLibrary::processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr
     groundRemovalRandomSeeds(cloud);
     
 }
-void PreprocessingLibrary::loadParameters(){
-    if (!nh.getParam("sensor_model_node/leaf_size", leaf_size)) {
-        ROS_ERROR("Failed to get parameter 'leaf_size'. Using default value.");
-        leaf_size = 0.2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/upperlim_height", upperlim_height)) {
-        ROS_ERROR("Failed to get parameter 'upperlim_height'. Using default value.");
-        upperlim_height = 2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/lowerlim_height", lowerlim_height)) {
-        ROS_ERROR("Failed to get parameter 'lowerlim_height'. Using default value.");
-        lowerlim_height = -2.5;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/cropbox_size", cropbox_size)) {
-        ROS_ERROR("Failed to get parameter 'cropbox_size'. Using default value.");
-        cropbox_size = 30;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/StddevMulThresh", StddevMulThresh)) {
-        ROS_ERROR("Failed to get parameter 'StddevMulThresh'. Using default value.");
-        StddevMulThresh = 1;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/meanK", meanK)) {
-        ROS_ERROR("Failed to get parameter 'meanK'. Using default value.");
-        meanK = 50;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/RadiusSearch", RadiusSearch)) {
-        ROS_ERROR("Failed to get parameter 'RadiusSearch'. Using default value.");
-        RadiusSearch = 2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/NeighborsInRadius", NeighborsInRadius)) {
-        ROS_ERROR("Failed to get parameter 'NeighborsInRadius'. Using default value.");
-        NeighborsInRadius = 4;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/DistanceThreshold", DistanceThreshold)) {
-        ROS_ERROR("Failed to get parameter 'DistanceThreshold'. Using default value.");
-        DistanceThreshold = 0.2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/EpsAngle", EpsAngle)) {
-        ROS_ERROR("Failed to get parameter 'EpsAngle'. Using default value.");
-        EpsAngle = 0.025;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/NormalDistanceWeight", NormalDistanceWeight)) {
-        ROS_ERROR("Failed to get parameter 'NeighborsInRadius'. Using default value.");
-        NormalDistanceWeight = 0.2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/MaxIterations", MaxIterations)) {
-        ROS_ERROR("Failed to get parameter 'MaxIterations'. Using default value.");
-        MaxIterations = 500;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/NumSeeds", NumSeeds)) {
-        ROS_ERROR("Failed to get parameter 'NumSeeds'. Using default value.");
-        NumSeeds = 100;  // Set a default value
+void PreprocessingLibrary::loadParameters(const std::string& filename) {
+    // Open the YAML file
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening YAML file: " << filename << std::endl;
+        return;
     }
 
-}      
+    // Parse the YAML file
+    YAML::Node config = YAML::Load(file);
+
+    // Access parameters from the YAML file
+    leaf_size = config["leaf_size"].as<double>();
+    upperlim_height = config["upperlim_height"].as<double>();
+    lowerlim_height = config["lowerlim_height"].as<double>();
+    cropbox_size = config["cropbox_size"].as<double>();
+    StddevMulThresh = config["StddevMulThresh"].as<double>();
+    meanK = config["meanK"].as<double>();
+    RadiusSearch = config["RadiusSearch"].as<double>();
+    NeighborsInRadius = config["NeighborsInRadius"].as<double>();
+    DistanceThreshold = config["DistanceThreshold"].as<double>();
+    EpsAngle = config["EpsAngle"].as<double>();
+    NormalDistanceWeight = config["NormalDistanceWeight"].as<double>();
+    MaxIterations = config["MaxIterations"].as<double>();
+}
+      
 void PreprocessingLibrary::cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud){
     // Create the filter
     pcl::CropBox<pcl::PointXYZ> crop_box;
@@ -252,6 +224,21 @@ void PreprocessingLibrary::groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXY
 
 void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
 {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi(new pcl::PointCloud<pcl::PointXYZ>);
+    // Define the Region of Interest (Bounding Box)
+    Eigen::Vector4f minPoint;
+    Eigen::Vector4f maxPoint;
+    minPoint << -40, -40, -4, 1.0;
+    maxPoint << 40, 40, -1.25, 1.0;
+
+    // Crop the input cloud based on the defined bounding box (ROI)
+    pcl::CropBox<pcl::PointXYZ> crop_box_filter;
+    crop_box_filter.setInputCloud(cloud);
+    crop_box_filter.setMin(minPoint);
+    crop_box_filter.setMax(maxPoint);
+    crop_box_filter.setKeepOrganized(true);
+    crop_box_filter.filter(*cloud_roi);
+
     // Find Plane with Random Seeds
     pcl::SACSegmentation<pcl::PointXYZ> segmentor;
     segmentor.setOptimizeCoefficients(true);
@@ -261,7 +248,7 @@ void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXY
     segmentor.setEpsAngle(EpsAngle);
     segmentor.setMaxIterations(MaxIterations);
     segmentor.setDistanceThreshold(DistanceThreshold);
-    segmentor.setInputCloud(cloud);  // Use the entire cloud for ground removal
+    segmentor.setInputCloud(cloud_roi);  
 
      // Output plane
     pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);

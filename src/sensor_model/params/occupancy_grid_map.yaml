@@ -1,0 +1,10 @@
+# Grid Map Parameters
+gridmap_size : 50
+resolution : 0.2
+# Grid Map Values
+UNKNOWN : -1
+FREE_SPACE : 0
+OBSTACLE : 100
+# Ray Casting parameters
+distance_margin : 1
+angular_resolution : 0.1
