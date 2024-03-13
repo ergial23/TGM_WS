@@ -1,10 +1,8 @@
 #include "preprocessing_library.h"
 
 
-PreprocessingLibrary::PreprocessingLibrary(ros::NodeHandle& nh) {
-    
-    //PreprocessingLibrary::loadParameters();
-    PreprocessingLibrary::loadParameters2(parameters_file_name);
+PreprocessingLibrary::PreprocessingLibrary() {
+    PreprocessingLibrary::loadParameters(parameters_file_name);
     
 }
 
@@ -19,7 +17,7 @@ void PreprocessingLibrary::processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr
     groundRemovalRandomSeeds(cloud);
     
 }
-void PreprocessingLibrary::loadParameters2(const std::string& filename) {
+void PreprocessingLibrary::loadParameters(const std::string& filename) {
     // Open the YAML file
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -44,58 +42,7 @@ void PreprocessingLibrary::loadParameters2(const std::string& filename) {
     NormalDistanceWeight = config["NormalDistanceWeight"].as<double>();
     MaxIterations = config["MaxIterations"].as<double>();
 }
-
-void PreprocessingLibrary::loadParameters(){
-    if (!nh.getParam("sensor_model_node/leaf_size", leaf_size)) {
-        ROS_ERROR("Failed to get parameter 'leaf_size'. Using default value.");
-        leaf_size = 0.2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/upperlim_height", upperlim_height)) {
-        ROS_ERROR("Failed to get parameter 'upperlim_height'. Using default value.");
-        upperlim_height = 2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/lowerlim_height", lowerlim_height)) {
-        ROS_ERROR("Failed to get parameter 'lowerlim_height'. Using default value.");
-        lowerlim_height = -2.5;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/cropbox_size", cropbox_size)) {
-        ROS_ERROR("Failed to get parameter 'cropbox_size'. Using default value.");
-        cropbox_size = 30;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/StddevMulThresh", StddevMulThresh)) {
-        ROS_ERROR("Failed to get parameter 'StddevMulThresh'. Using default value.");
-        StddevMulThresh = 1;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/meanK", meanK)) {
-        ROS_ERROR("Failed to get parameter 'meanK'. Using default value.");
-        meanK = 50;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/RadiusSearch", RadiusSearch)) {
-        ROS_ERROR("Failed to get parameter 'RadiusSearch'. Using default value.");
-        RadiusSearch = 2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/NeighborsInRadius", NeighborsInRadius)) {
-        ROS_ERROR("Failed to get parameter 'NeighborsInRadius'. Using default value.");
-        NeighborsInRadius = 4;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/DistanceThreshold", DistanceThreshold)) {
-        ROS_ERROR("Failed to get parameter 'DistanceThreshold'. Using default value.");
-        DistanceThreshold = 0.2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/EpsAngle", EpsAngle)) {
-        ROS_ERROR("Failed to get parameter 'EpsAngle'. Using default value.");
-        EpsAngle = 0.025;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/NormalDistanceWeight", NormalDistanceWeight)) {
-        ROS_ERROR("Failed to get parameter 'NeighborsInRadius'. Using default value.");
-        NormalDistanceWeight = 0.2;  // Set a default value
-    }
-    if (!nh.getParam("sensor_model_node/MaxIterations", MaxIterations)) {
-        ROS_ERROR("Failed to get parameter 'MaxIterations'. Using default value.");
-        MaxIterations = 500;  // Set a default value
-    }
-
-}      
+      
 void PreprocessingLibrary::cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud){
     // Create the filter
     pcl::CropBox<pcl::PointXYZ> crop_box;

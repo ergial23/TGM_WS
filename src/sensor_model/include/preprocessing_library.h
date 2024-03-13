@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -17,35 +18,34 @@
 #include <pcl/filters/voxel_grid.h>
 
 class PreprocessingLibrary {
-private:
-    std::string parameters_file_name = "/home/ericga/MASTER_THESIS/TGM_WS/src/sensor_model/params/preprocessing.yaml";
-    double leaf_size;
-    double upperlim_height;
-    double lowerlim_height;
-    double cropbox_size;
-    double StddevMulThresh;
-    double meanK;
-    double RadiusSearch;
-    double NeighborsInRadius;
-    double DistanceThreshold;
-    double EpsAngle;
-    double NormalDistanceWeight;
-    double MaxIterations;
-    double NumSeeds;
-    ros::NodeHandle nh;
-
-public:
-    PreprocessingLibrary(ros::NodeHandle& nh);
+    private:
+        std::string parameters_file_name = "/home/ericga/MASTER_THESIS/TGM_WS/src/sensor_model/params/preprocessing.yaml";
+        double leaf_size;
+        double upperlim_height;
+        double lowerlim_height;
+        double cropbox_size;
+        double StddevMulThresh;
+        double meanK;
+        double RadiusSearch;
+        double NeighborsInRadius;
+        double DistanceThreshold;
+        double EpsAngle;
+        double NormalDistanceWeight;
+        double MaxIterations;
+        double NumSeeds;
+        ros::NodeHandle nh;
     
-    void loadParameters();
-    void loadParameters2(const std::string& filename);
-    void processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void voxelDownsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-    void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
+    public:
+        PreprocessingLibrary();
 
+        void loadParameters(const std::string& filename);
+        void processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void voxelDownsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
+    
 };

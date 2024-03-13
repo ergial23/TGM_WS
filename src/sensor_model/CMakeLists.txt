@@ -40,5 +40,6 @@ target_include_directories(preprocessing_node PUBLIC ${catkin_INCLUDE_DIRS} ${PC
 target_link_libraries(preprocessing_node ${catkin_LIBRARIES} ${PCL_LIBRARIES}  preprocessing_library ${YAML_CPP_LIBRARIES})
 
 target_include_directories(occupancy_grid_map_node PUBLIC ${catkin_INCLUDE_DIRS}  ${YAML_CPP_INCLUDE_DIR})
-target_link_libraries(occupancy_grid_map_node ${catkin_LIBRARIES}  occupancy_grid_map_library ${YAML_CPP_LIBRARIES})
+target_link_libraries(occupancy_grid_map_node ${catkin_LIBRARIES} occupancy_grid_map_library ${YAML_CPP_LIBRARIES} ${PCL_LIBRARIES})
+
 
