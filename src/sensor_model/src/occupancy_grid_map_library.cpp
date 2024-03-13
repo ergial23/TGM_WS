@@ -17,15 +17,21 @@ void OccupancyGridMapLibrary::loadParametersOccupancy(const std::string& filenam
     YAML::Node config = YAML::Load(file);
 
     // Access parameters from the YAML file
+    
     distance_margin_ = config["distance_margin"].as<float>();
-    origin_x_ = config["origin_x"].as<float>();
-    origin_y_ = config["origin_y"].as<float>();
+    gridmap_size_ = config["gridmap_size"].as<float>();
     resolution_ = config["resolution"].as<float>();
-    width_ = config["width"].as<double>();
-    height_ = config["height"].as<double>();
+    angular_resolution = config["angular_resolution"].as<double>();
+    
     UNKNOWN = config["UNKNOWN"].as<double>();
     FREE_SPACE = config["FREE_SPACE"].as<double>();
     OBSTACLE = config["OBSTACLE"].as<double>();
+    
+    width_ = gridmap_size_ / resolution_;
+    height_ = gridmap_size_ / resolution_;
+    origin_x_ = - gridmap_size_ / 2;
+    origin_y_ = - gridmap_size_ / 2;
+    
 }
 void OccupancyGridMapLibrary::initializeGrid(nav_msgs::OccupancyGrid& occupancyGrid){
     occupancyGrid.info.resolution = resolution_; // Example resolution
@@ -96,7 +102,7 @@ void OccupancyGridMapLibrary::setCellValue(double wx, double wy, unsigned char v
         std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins
         ){
         
-        double angle_increment = 0.25 * M_PI / 180; // Example: 1 degree resolution
+        double angle_increment = angular_resolution * M_PI / 180; // Example: 1 degree resolution
         double min_angle = -M_PI;
         double max_angle = M_PI;
         int angle_bin_size = static_cast<int>((max_angle - min_angle) / angle_increment);

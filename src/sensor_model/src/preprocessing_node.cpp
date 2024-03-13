@@ -15,7 +15,7 @@ private:
     long long totalDuration = 0;
 
 public:
-    SensorModel() : nh("~"), preprocessing(nh) {
+    SensorModel() : nh("~"), preprocessing() {
         pointCloudSub = nh.subscribe("/ouster/points", 1, &SensorModel::pointCloudCallback, this);
         FilteredOccupancyGridPub = nh.advertise<sensor_msgs::PointCloud2>("/pointcloud_preprocessed", 1);
         

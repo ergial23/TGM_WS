@@ -51,24 +51,30 @@ public:
         occupancyGrid_.header.frame_id = "map";
         occupancyGridMapPub.publish(occupancyGrid_);
     }
+    void generateGridMap() {
+    occupancyGridMap.processPointCloudsIfUpdated(rawPointCloudUpdated, obstaclePointCloudUpdated,
+                                                 latestRawPointCloud, latestObstaclePointCloud,
+                                                 obstaclePointCloudAngleBins, rawPointCloudAngleBins);
+
+    occupancyGridMap.initializeFreeSpace(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
+    occupancyGridMap.fillUnknownCells(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
+    occupancyGridMap.fillOccupiedCells(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
+
+    publish_msg(occupancyGrid_);
+
+    occupancyGridMap.clearOccupancyGrid(occupancyGrid_);
+}
 }; 
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "occupancy_grid_map_node");
     RayCasting rayCasting;
     rayCasting.occupancyGridMap.initializeGrid(rayCasting.occupancyGrid_);
-    
+
     ros::Rate r(10);
     while (ros::ok()) {
-        rayCasting.occupancyGridMap.processPointCloudsIfUpdated(rayCasting.rawPointCloudUpdated,rayCasting.obstaclePointCloudUpdated,rayCasting.latestRawPointCloud,rayCasting.latestObstaclePointCloud,rayCasting.obstaclePointCloudAngleBins, rayCasting.rawPointCloudAngleBins);
-        rayCasting.occupancyGridMap.initializeFreeSpace(rayCasting.obstaclePointCloudAngleBins, rayCasting.rawPointCloudAngleBins, rayCasting.occupancyGrid_);
-        rayCasting.occupancyGridMap.fillUnknownCells(rayCasting.obstaclePointCloudAngleBins, rayCasting.rawPointCloudAngleBins,rayCasting.occupancyGrid_);
-        rayCasting.occupancyGridMap.fillOccupiedCells(rayCasting.obstaclePointCloudAngleBins, rayCasting.rawPointCloudAngleBins,rayCasting.occupancyGrid_);
         
-        rayCasting.publish_msg(rayCasting.occupancyGrid_);
-
-        rayCasting.occupancyGridMap.clearOccupancyGrid(rayCasting.occupancyGrid_);
-
+        rayCasting.generateGridMap();
         ros::spinOnce();
         r.sleep();
     }

@@ -25,11 +25,13 @@ class OccupancyGridMapLibrary{
         // We define the parameters
         std::string parameters_file_name = "/home/ericga/MASTER_THESIS/TGM_WS/src/sensor_model/params/occupancy_grid_map.yaml";
         float distance_margin_;
+        float gridmap_size_;
         float origin_x_;
         float origin_y_;
         float resolution_;
         double width_;
         double height_;
+        double angular_resolution;
         double UNKNOWN;  
         double OBSTACLE;
         double FREE_SPACE;
