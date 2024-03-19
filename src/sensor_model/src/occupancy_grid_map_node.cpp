@@ -15,8 +15,8 @@ private:
 public:
 
     RayCasting() : nh("~") {
-        obstaclePointCloudSub = nh.subscribe("/pointcloud_preprocessed", 1, &RayCasting::obstaclePointCloudCallback, this);
-        rawPointCloudSub = nh.subscribe("/ouster/points", 1, &RayCasting::rawPointCloudCallback, this);
+        obstaclePointCloudSub = nh.subscribe("/obstacle_pointcloud", 1, &RayCasting::obstaclePointCloudCallback, this);
+        rawPointCloudSub = nh.subscribe("/ground_pointcloud", 1, &RayCasting::rawPointCloudCallback, this);
         occupancyGridMapPub = nh.advertise<nav_msgs::OccupancyGrid>("/grid_map", 1); //cambiar este publisher e introducir el tipo correcto.
     }
     
@@ -59,11 +59,12 @@ public:
     occupancyGridMap.initializeFreeSpace(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
     occupancyGridMap.fillUnknownCells(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
     occupancyGridMap.fillOccupiedCells(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
-
+    //occupancyGridMap.smoothOccupancyGrid(occupancyGrid_);
     publish_msg(occupancyGrid_);
-
     occupancyGridMap.clearOccupancyGrid(occupancyGrid_);
-}
+    
+    }
+
 }; 
 
 int main(int argc, char** argv) {

@@ -39,13 +39,13 @@ class PreprocessingLibrary {
         PreprocessingLibrary();
 
         void loadParameters(const std::string& filename);
-        void processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr ground_plane,pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground);
         void voxelDownsampling(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
         void radiusOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
         void cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
         void statisticalOutlierRemoval(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
         void groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
-        void groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+        void groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr ground_plane,pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground);
         void computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi);
     
 };

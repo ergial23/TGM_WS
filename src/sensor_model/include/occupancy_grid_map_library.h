@@ -44,7 +44,7 @@ class OccupancyGridMapLibrary{
     std::pair<int, int> mapToGrid(double mx, double my);//
     void raytrace(double x0, double y0, double x1, double y1, int value, nav_msgs::OccupancyGrid& occupancyGrid_);//
     void setCellValue(double wx, double wy, unsigned char value, nav_msgs::OccupancyGrid& occupancyGrid_);//
-     void processPointCloudsIfUpdated( bool rawPointCloudUpdated, 
+    void processPointCloudsIfUpdated( bool rawPointCloudUpdated, 
                                        bool obstaclePointCloudUpdated,
                                        sensor_msgs::PointCloud2::ConstPtr latestRawPointCloud,
                                        sensor_msgs::PointCloud2::ConstPtr latestObstaclePointCloud,
@@ -65,6 +65,9 @@ class OccupancyGridMapLibrary{
     void fillOccupiedCells(std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
                            std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins,
                            nav_msgs::OccupancyGrid& occupancyGrid_);
+    bool isOccupied(int value);
+    bool isUnknown(int8_t value);
+    void smoothOccupancyGrid(nav_msgs::OccupancyGrid& grid);
     void clearOccupancyGrid(nav_msgs::OccupancyGrid& occupancyGrid_);
     
 };

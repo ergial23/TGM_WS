@@ -7,7 +7,8 @@ class SensorModel {
 private:
     ros::NodeHandle nh;
     ros::Subscriber pointCloudSub;
-    ros::Publisher FilteredOccupancyGridPub;
+    ros::Publisher FilteredObstaclePointCloudPub;
+    ros::Publisher FilteredGroundPointCloudPub;
 
     PreprocessingLibrary preprocessing;// Instance of the preprocessing library
 
@@ -17,7 +18,8 @@ private:
 public:
     SensorModel() : nh("~"), preprocessing() {
         pointCloudSub = nh.subscribe("/ouster/points", 1, &SensorModel::pointCloudCallback, this);
-        FilteredOccupancyGridPub = nh.advertise<sensor_msgs::PointCloud2>("/pointcloud_preprocessed", 1);
+        FilteredObstaclePointCloudPub = nh.advertise<sensor_msgs::PointCloud2>("/obstacle_pointcloud", 1);
+        FilteredGroundPointCloudPub = nh.advertise<sensor_msgs::PointCloud2>("/ground_pointcloud", 1);
         
     }
 
@@ -25,8 +27,10 @@ public:
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
         
+        pcl::PointCloud<pcl::PointXYZ>::Ptr ground_plane(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr obstacle(new pcl::PointCloud<pcl::PointXYZ>);
         auto start_time = std::chrono::high_resolution_clock::now(); // Start measuring time
-        preprocessing.processPointCloud(cloud);
+        preprocessing.processPointCloud(cloud, ground_plane, obstacle);
         auto end_time = std::chrono::high_resolution_clock::now(); // Stop measuring time
         
         // Calculate the duration in milliseconds
@@ -43,15 +47,19 @@ public:
         // Reset the counter and total duration for subsequent iterations
         callbackCounter = 0;
         totalDuration = 0;
-    }
+        }
 
         // Update the header information
-        cloud->header = pcl_conversions::toPCL(msg->header);
-
+        ground_plane->header = pcl_conversions::toPCL(msg->header);
+        obstacle->header = pcl_conversions::toPCL(msg->header);
+        
         sensor_msgs::PointCloud2 cloud_msg;
-        pcl::toROSMsg(*cloud, cloud_msg);
-
-        FilteredOccupancyGridPub.publish(cloud_msg);
+        
+        pcl::toROSMsg(*ground_plane, cloud_msg);
+        FilteredGroundPointCloudPub.publish(cloud_msg);
+        
+        pcl::toROSMsg(*obstacle, cloud_msg);
+        FilteredObstaclePointCloudPub.publish(cloud_msg);
     }
 };
 

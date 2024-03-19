@@ -34,12 +34,12 @@ void OccupancyGridMapLibrary::loadParametersOccupancy(const std::string& filenam
     
 }
 void OccupancyGridMapLibrary::initializeGrid(nav_msgs::OccupancyGrid& occupancyGrid){
-    occupancyGrid.info.resolution = resolution_; // Example resolution
-    occupancyGrid.info.width = width_; // Example width
-    occupancyGrid.info.height = height_; // Example height
-    occupancyGrid.info.origin.position.x = origin_x_; // Example origin
-    occupancyGrid.info.origin.position.y = origin_y_; // Assuming square grid
-    occupancyGrid.data.resize(occupancyGrid.info.width * occupancyGrid.info.height, UNKNOWN);
+    occupancyGrid.info.resolution = resolution_; 
+    occupancyGrid.info.width = width_; 
+    occupancyGrid.info.height = height_; 
+    occupancyGrid.info.origin.position.x = origin_x_; 
+    occupancyGrid.info.origin.position.y = origin_y_; 
+    occupancyGrid.data.resize(occupancyGrid.info.width * occupancyGrid.info.height, UNKNOWN); //We initialize the grid with unknown.
 }
 
 std::pair<int, int> OccupancyGridMapLibrary::mapToGrid(double mx, double my){
@@ -50,15 +50,16 @@ std::pair<int, int> OccupancyGridMapLibrary::mapToGrid(double mx, double my){
 }
 
 void OccupancyGridMapLibrary::raytrace(double x0, double y0, double x1, double y1, int value, nav_msgs::OccupancyGrid& occupancyGrid_) {
-    auto [gx0, gy0] = mapToGrid(x0, y0);
-    auto [gx1, gy1] = mapToGrid(x1, y1);
-    int dx = std::abs(gx1 - gx0);
+    auto [gx0, gy0] = mapToGrid(x0, y0); // Start point in Grid coordinates.
+    auto [gx1, gy1] = mapToGrid(x1, y1); // End point in Grid coordinates.
+    int dx = std::abs(gx1 - gx0); // We compute the difference between the grid coordinates for each axis
     int dy = std::abs(gy1 - gy0);
-    int sx = gx0 < gx1 ? 1 : -1;
+    int sx = gx0 < gx1 ? 1 : -1; // We determine the step direction for each axis
     int sy = gy0 < gy1 ? 1 : -1;
     int err = dx - dy;
     while (true) {
         if (gx0 >= 0 && gx0 < occupancyGrid_.info.width && gy0 >= 0 && gy0 < occupancyGrid_.info.height) {
+            // Data is represented in an array. We need to calculate the index.
             occupancyGrid_.data[gy0 * occupancyGrid_.info.width + gx0] = value;
         }
         if (gx0 == gx1 && gy0 == gy1) break;
@@ -73,10 +74,9 @@ void OccupancyGridMapLibrary::setCellValue(double wx, double wy, unsigned char v
 
     if (gx >= 0 && gx < occupancyGrid_.info.width && gy >= 0 && gy < occupancyGrid_.info.height) {
         int index = gy * occupancyGrid_.info.width + gx;
-        // Ensure that UNKNOWN values are correctly handled.
-        occupancyGrid_.data[index] = (value == UNKNOWN) ? -1 : value;
+        occupancyGrid_.data[index] = value;
     } else {
-        ROS_WARN("Attempted to set cell value outside of occupancy grid bounds.");
+        //ROS_WARN("Attempted to set cell value outside of occupancy grid bounds.");
     }
 }
 
@@ -102,7 +102,7 @@ void OccupancyGridMapLibrary::setCellValue(double wx, double wy, unsigned char v
         std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins
         ){
         
-        double angle_increment = angular_resolution * M_PI / 180; // Example: 1 degree resolution
+        double angle_increment = angular_resolution * M_PI / 180; // angular resolution in rad 
         double min_angle = -M_PI;
         double max_angle = M_PI;
         int angle_bin_size = static_cast<int>((max_angle - min_angle) / angle_increment);
@@ -147,8 +147,8 @@ void OccupancyGridMapLibrary::initializeFreeSpace( std::vector<std::vector<BinIn
                                                    std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins,
                                                    nav_msgs::OccupancyGrid& occupancyGrid_){
     for (size_t bin_index = 0; bin_index < obstaclePointCloudAngleBins.size(); ++bin_index) {
-            auto &obstacleBin = obstaclePointCloudAngleBins.at(bin_index);
-            auto &rawBin = rawPointCloudAngleBins.at(bin_index);
+            auto &obstacleBin = obstaclePointCloudAngleBins[bin_index];
+            auto &rawBin = rawPointCloudAngleBins[bin_index];
 
             BinInfo end_distance;
             if (rawBin.empty() && obstacleBin.empty()) {
@@ -158,10 +158,11 @@ void OccupancyGridMapLibrary::initializeFreeSpace( std::vector<std::vector<BinIn
             } else if (obstacleBin.empty()) {
                 end_distance = rawBin.back();
             } else {
-                end_distance = (obstacleBin.back().range + distance_margin_ < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
+                //end_distance = (obstacleBin.back().range + distance_margin_ < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
+                end_distance = (obstacleBin.back().range < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
             }
 
-            raytrace(scan_origin_.position.x, scan_origin_.position.y, end_distance.wx, end_distance.wy, FREE_SPACE,occupancyGrid_);
+            raytrace(scan_origin_.position.x, scan_origin_.position.y, end_distance.wx, end_distance.wy, FREE_SPACE, occupancyGrid_);
         }
 }
 
@@ -185,7 +186,7 @@ void OccupancyGridMapLibrary::fillUnknownCells(std::vector<std::vector<BinInfo>>
                     // If there's a raw point beyond the last obstacle, mark the region between them as unknown
                     const auto &source = obstacleBin[dist_index];
                     const auto &target = *rawDistanceIter;
-                    raytrace(source.wx, source.wy, target.wx, target.wy,UNKNOWN, occupancyGrid_);
+                    raytrace(source.wx, source.wy, target.wx, target.wy, UNKNOWN, occupancyGrid_);
                 }
                 // No further processing needed for the last obstacle point
                 continue;
@@ -199,9 +200,6 @@ void OccupancyGridMapLibrary::fillUnknownCells(std::vector<std::vector<BinInfo>>
             if (nextObstacleDistance > distance_margin_ || noFreespacePoint) {
                 auto target = noFreespacePoint ? nextObstacle : *rawDistanceIter;
                 raytrace(source.wx, source.wy, target.wx, target.wy, UNKNOWN,occupancyGrid_);
-                if (!noFreespacePoint && target.wx == rawDistanceIter->wx && target.wy == rawDistanceIter->wy) {
-                    // Optionally mark the target raw point as free space
-                }
             }
         }
     }
@@ -213,7 +211,7 @@ void OccupancyGridMapLibrary::fillOccupiedCells(std::vector<std::vector<BinInfo>
         auto &obstacleBin = obstaclePointCloudAngleBins[bin_index];
         for (size_t dist_index = 0; dist_index < obstacleBin.size(); ++dist_index) {
             const auto &source = obstacleBin[dist_index];
-            // Mark the current obstacle point as LETHAL_OBSTACLE/OCCUPIED
+            // Mark the current obstacle point as OCCUPIED
             setCellValue(source.wx, source.wy, OBSTACLE, occupancyGrid_);
 
             // Check if there's a next obstacle point in the same bin
@@ -226,6 +224,59 @@ void OccupancyGridMapLibrary::fillOccupiedCells(std::vector<std::vector<BinInfo>
                 if (obstacleDistance <= distance_margin_) {
                     raytrace(source.wx, source.wy, nextSource.wx, nextSource.wy, OBSTACLE, occupancyGrid_);
                 }
+            }
+        }
+    }
+}
+bool OccupancyGridMapLibrary::isOccupied(int value) {
+    // Assuming any value > 0 is occupied. Adjust this threshold as necessary.
+    return value == 100;
+}
+
+bool OccupancyGridMapLibrary::isUnknown(int8_t value) {
+    return value == -1; // Assuming -1 represents unknown
+}
+void OccupancyGridMapLibrary::smoothOccupancyGrid(nav_msgs::OccupancyGrid& grid) {
+    // Copy of the original occupancy grid data
+    std::vector<int8_t> originalData = grid.data; 
+
+    for (int y = 0; y < height_; ++y) {
+        for (int x = 0; x < width_; ++x) {
+            int index = x + y * width_;
+
+            if (isOccupied(originalData[index])) {
+                // Skip occupied cells; we're only looking to change free or unknown cells that are surrounded
+                continue;
+            }
+            
+            int freeNeighbors = 0;
+            int occupiedNeighbors = 0;
+            for (int dy = -1; dy <= 1; ++dy) {
+                for (int dx = -1; dx <= 1; ++dx) {
+                    if (dx == 0 && dy == 0) continue; // Skip the cell itself
+
+                    int nx = x + dx;
+                    int ny = y + dy;
+
+                    // Check boundaries
+                    if (nx >= 0 && nx < width_ && ny >= 0 && ny < height_) {
+                        int neighborIndex = nx + ny * width_;
+                        if (isOccupied(originalData[neighborIndex])) {
+                            ++occupiedNeighbors;
+                        } else if (originalData[neighborIndex] == 0) { // Assuming 0 represents free space
+                            ++freeNeighbors;
+                        }
+                    }
+                }
+            }
+
+            // Rule: If a free cell is surrounded by more than 7 occupied cells, mark it as occupied
+            if (!isUnknown(originalData[index]) && occupiedNeighbors > 3) {
+                grid.data[index] = 100; // Mark as occupied
+            }
+            // Additional rule: If an unknown cell is surrounded by more than 7 free cells, mark it as free
+            else if (isUnknown(originalData[index]) && freeNeighbors > 5) {
+                grid.data[index] = 0; // Mark as free space
             }
         }
     }

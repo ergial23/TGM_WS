@@ -3,7 +3,7 @@
 leaf_size : 0.15
 
 ######### CROP BOX  #########
-cropbox_size : 35.0
+cropbox_size : 50.0
 upperlim_height : 2
 lowerlim_height : -2.5
 
@@ -17,7 +17,7 @@ RadiusSearch : 1.0
 
 #######GROUND REMOVAL#######
 MaxIterations : 500
-DistanceThreshold : 0.4 #  Distance to the model threshold
+DistanceThreshold : 0.25 #  Distance to the model threshold
 # surface normals seed
 EpsAngle : 0.85 #The maximum allowed difference between the model normal and the given axis in radians
 NormalDistanceWeight : 0.2 #Set the relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal.

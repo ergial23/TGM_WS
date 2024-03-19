@@ -8,13 +8,13 @@ PreprocessingLibrary::PreprocessingLibrary() {
 
 //FUNCTIONS
 
-void PreprocessingLibrary::processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud){
+void PreprocessingLibrary::processPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr ground_plane,pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground){
     cropBoxFilter(cloud);
     statisticalOutlierRemoval(cloud);
     //radiusOutlierRemoval(cloud);
     voxelDownsampling(cloud);
     //groundRemovalNormalSeeds(cloud);
-    groundRemovalRandomSeeds(cloud);
+    groundRemovalRandomSeeds(cloud, ground_plane, non_ground);
     
 }
 void PreprocessingLibrary::loadParameters(const std::string& filename) {
@@ -51,8 +51,8 @@ void PreprocessingLibrary::cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
     crop_box.setInputCloud(cloud);
 
     // Set the region of interest (ROI) 
-    Eigen::Vector4f min_pt(-cropbox_size, -cropbox_size, lowerlim_height, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
-    Eigen::Vector4f max_pt(cropbox_size, cropbox_size, upperlim_height, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f min_pt(-cropbox_size / 2, -cropbox_size / 2, lowerlim_height, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f max_pt(cropbox_size / 2, cropbox_size / 2, upperlim_height, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
     crop_box.setMin(min_pt);
     crop_box.setMax(max_pt);
     crop_box.setKeepOrganized(false);
@@ -167,8 +167,8 @@ void PreprocessingLibrary::computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cl
     // Define the Region of Interest (Bounding Box)
     Eigen::Vector4f minPoint;
     Eigen::Vector4f maxPoint;
-    minPoint << -40, -40, -4, 1.0;
-    maxPoint << 40, 40, -1, 1.0;
+    minPoint << -cropbox_size / 2, -cropbox_size / 2, -4, 1.0;
+    maxPoint << cropbox_size / 2, cropbox_size / 2, -1, 1.0;
 
     // Crop the input cloud based on the defined bounding box (ROI)
     pcl::CropBox<pcl::PointXYZ> crop_box_filter;
@@ -222,21 +222,22 @@ void PreprocessingLibrary::groundRemovalNormalSeeds(pcl::PointCloud<pcl::PointXY
 }
 
 
-void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud)
+void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,pcl::PointCloud<pcl::PointXYZ>::Ptr ground_plane,pcl::PointCloud<pcl::PointXYZ>::Ptr non_ground)
 {
+    {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_roi(new pcl::PointCloud<pcl::PointXYZ>);
     // Define the Region of Interest (Bounding Box)
     Eigen::Vector4f minPoint;
     Eigen::Vector4f maxPoint;
-    minPoint << -40, -40, -4, 1.0;
-    maxPoint << 40, 40, -1.25, 1.0;
+    minPoint << -cropbox_size / 2, -cropbox_size / 2, -4, 1.0;
+    maxPoint << cropbox_size / 2, cropbox_size / 2, -1.25, 1.0;
 
     // Crop the input cloud based on the defined bounding box (ROI)
     pcl::CropBox<pcl::PointXYZ> crop_box_filter;
     crop_box_filter.setInputCloud(cloud);
     crop_box_filter.setMin(minPoint);
     crop_box_filter.setMax(maxPoint);
-    crop_box_filter.setKeepOrganized(true);
+    crop_box_filter.setKeepOrganized(false);
     crop_box_filter.filter(*cloud_roi);
 
     // Find Plane with Random Seeds
@@ -248,19 +249,26 @@ void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXY
     segmentor.setEpsAngle(EpsAngle);
     segmentor.setMaxIterations(MaxIterations);
     segmentor.setDistanceThreshold(DistanceThreshold);
-    segmentor.setInputCloud(cloud_roi);  
+    segmentor.setInputCloud(cloud_roi);
 
-     // Output plane
+    // Output plane
     pcl::ModelCoefficients::Ptr coefficients_plane(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices);
     segmentor.segment(*inliers_plane, *coefficients_plane);
 
-    // Extract the planar inliers from the entire cloud using original indices
-    pcl::ExtractIndices<pcl::PointXYZ> extract_indices;
-    extract_indices.setInputCloud(cloud);
-    extract_indices.setIndices(inliers_plane);
-    extract_indices.setNegative(true);
-    extract_indices.filter(*cloud);
+    // Extract the planar inliers from the input cloud
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers_plane);
+
+    // Extract ground plane
+    extract.setNegative(false); // Extract the inliers
+    extract.filter(*ground_plane);
+
+    // Extract non-ground points
+    extract.setNegative(true); // Extract the outliers
+    extract.filter(*non_ground);
+}
 }
 
 

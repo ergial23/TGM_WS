@@ -5,7 +5,7 @@
   <node pkg="tf2_ros" type="static_transform_publisher" name="static_transform_publisher" output="screen" args="0 0 2 0 0 0 map os_sensor" required="true"/>
 
   <!-- Play bag file -->
-  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 0.8 /home/ericga/MASTER_THESIS/TGM_WS/bags/static.bag">
+  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 0.8 /home/ericga/MASTER_THESIS/TGM_WS/bags/city.bag">
   </node>
   
   <!-- Start preprocessing_node -->
