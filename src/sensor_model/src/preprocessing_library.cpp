@@ -51,8 +51,8 @@ void PreprocessingLibrary::cropBoxFilter(pcl::PointCloud<pcl::PointXYZ>::Ptr clo
     crop_box.setInputCloud(cloud);
 
     // Set the region of interest (ROI) 
-    Eigen::Vector4f min_pt(-cropbox_size, -cropbox_size, lowerlim_height, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
-    Eigen::Vector4f max_pt(cropbox_size, cropbox_size, upperlim_height, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f min_pt(-cropbox_size / 2, -cropbox_size / 2, lowerlim_height, 1.0);  // Minimum point (x, y, z, 1.0 for homogeneous coordinates)
+    Eigen::Vector4f max_pt(cropbox_size / 2, cropbox_size / 2, upperlim_height, 1.0);    // Maximum point (x, y, z, 1.0 for homogeneous coordinates)
     crop_box.setMin(min_pt);
     crop_box.setMax(max_pt);
     crop_box.setKeepOrganized(false);
@@ -167,8 +167,8 @@ void PreprocessingLibrary::computeNormals(pcl::PointCloud<pcl::PointXYZ>::Ptr cl
     // Define the Region of Interest (Bounding Box)
     Eigen::Vector4f minPoint;
     Eigen::Vector4f maxPoint;
-    minPoint << -40, -40, -4, 1.0;
-    maxPoint << 40, 40, -1, 1.0;
+    minPoint << -cropbox_size / 2, -cropbox_size / 2, -4, 1.0;
+    maxPoint << cropbox_size / 2, cropbox_size / 2, -1, 1.0;
 
     // Crop the input cloud based on the defined bounding box (ROI)
     pcl::CropBox<pcl::PointXYZ> crop_box_filter;
@@ -228,8 +228,8 @@ void PreprocessingLibrary::groundRemovalRandomSeeds(pcl::PointCloud<pcl::PointXY
     // Define the Region of Interest (Bounding Box)
     Eigen::Vector4f minPoint;
     Eigen::Vector4f maxPoint;
-    minPoint << -40, -40, -4, 1.0;
-    maxPoint << 40, 40, -1.25, 1.0;
+    minPoint << -cropbox_size / 2, -cropbox_size / 2, -4, 1.0;
+    maxPoint << cropbox_size / 2, cropbox_size / 2, -1.25, 1.0;
 
     // Crop the input cloud based on the defined bounding box (ROI)
     pcl::CropBox<pcl::PointXYZ> crop_box_filter;
