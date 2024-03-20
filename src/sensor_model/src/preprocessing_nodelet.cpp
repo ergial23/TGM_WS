@@ -3,27 +3,36 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <chrono>
 
-class SensorModel {
+#include <nodelet/nodelet.h>
+#include <pluginlib/class_list_macros.h>
+
+
+class PreprocessingNodelet : public nodelet::Nodelet {
 private:
-    ros::NodeHandle nh;
+    virtual void onInit();
+    
     ros::Subscriber pointCloudSub;
     ros::Publisher FilteredObstaclePointCloudPub;
     ros::Publisher FilteredGroundPointCloudPub;
 
-    PreprocessingLibrary preprocessing;// Instance of the preprocessing library
+    PreprocessingLibrary preprocessing; // Instance of the preprocessing library
 
     int callbackCounter = 0;
     long long totalDuration = 0;
 
-public:
-    SensorModel() : nh("~"), preprocessing() {
-        pointCloudSub = nh.subscribe("/ouster/points", 1, &SensorModel::pointCloudCallback, this);
-        FilteredObstaclePointCloudPub = nh.advertise<sensor_msgs::PointCloud2>("/obstacle_pointcloud", 1);
-        FilteredGroundPointCloudPub = nh.advertise<sensor_msgs::PointCloud2>("/ground_pointcloud", 1);
-        
-    }
+    void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg);
+};
 
-    void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
+void PreprocessingNodelet::onInit() {
+    ros::NodeHandle& nh = getNodeHandle();
+    ros::NodeHandle& private_nh = getPrivateNodeHandle();
+    
+    pointCloudSub = nh.subscribe("/ouster/points", 1, &PreprocessingNodelet::pointCloudCallback, this);
+    FilteredObstaclePointCloudPub = private_nh.advertise<sensor_msgs::PointCloud2>("/obstacle_pointcloud", 1);
+    FilteredGroundPointCloudPub = private_nh.advertise<sensor_msgs::PointCloud2>("/ground_pointcloud", 1);
+}
+
+void PreprocessingNodelet::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(*msg, *cloud);
         
@@ -60,18 +69,6 @@ public:
         
         pcl::toROSMsg(*obstacle, cloud_msg);
         FilteredObstaclePointCloudPub.publish(cloud_msg);
-    }
-};
-
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "preprocessing_node");
-    SensorModel sensorModel;
-    
-    ros::Rate r(10);
-    while (ros::ok()) {
-        ros::spinOnce();
-        r.sleep();
-    }
-
-    return 0;
 }
+
+PLUGINLIB_EXPORT_CLASS(PreprocessingNodelet, nodelet::Nodelet)

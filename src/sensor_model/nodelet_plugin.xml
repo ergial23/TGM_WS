@@ -1,0 +1,11 @@
+<library path="libpreprocessing_nodelet">
+  <class name="sensor_model/PreprocessingNodelet" type="PreprocessingNodelet" base_class_type="nodelet::Nodelet">
+    <description>Preprocessing nodelet for point cloud data.</description>
+  </class>
+</library>
+<library path="liboccupancy_grid_map_nodelet">
+  <class name="sensor_model/RayCastingNodelet" type="RayCastingNodelet" base_class_type="nodelet::Nodelet">
+    <description>Occupancy grid map nodelet for mapping.</description>
+  </class>
+</library>
+

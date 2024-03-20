@@ -5,27 +5,28 @@
   <node pkg="tf2_ros" type="static_transform_publisher" name="static_transform_publisher" output="screen" args="0 0 2 0 0 0 map os_sensor" required="true"/>
 
   <!-- Play bag file -->
-  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 0.8 /home/ericga/MASTER_THESIS/TGM_WS/bags/city.bag">
-  </node>
+  <node name="play_bag" pkg="rosbag" type="play" respawn="false" output="screen" args="-l -r 0.8 /home/ericga/MASTER_THESIS/TGM_WS/bags/city.bag"/>
+
+  <!-- Nodelet manager -->
+  <node pkg="nodelet" type="nodelet" name="sensor_model_manager" args="manager" output="screen"/>
   
-  <!-- Start preprocessing_node -->
-  <node name="preprocessing_node" pkg="sensor_model" type="preprocessing_node" output="screen">
-    <rosparam file="$(find sensor_model)/params/preprocessing.yaml" />
+  <!-- Load the preprocessing_nodelet into the manager -->
+  <node pkg="nodelet" type="nodelet" name="preprocessing_nodelet" args="load sensor_model/PreprocessingNodelet sensor_model_manager" output="screen">
+      <rosparam file="$(find sensor_model)/params/preprocessing.yaml" />
   </node>
-  
-  <!-- Start occupancy_grid_map_node -->
-  <node name="occupancy_grid_map_node" pkg="sensor_model" type="occupancy_grid_map_node" output="screen">
-    <rosparam file="$(find sensor_model)/params/occupancy_grid_map.yaml" />
+    
+  <!-- Load the occupancy_grid_map_nodelet into the manager -->
+  <node pkg="nodelet" type="nodelet" name="occupancy_grid_map_nodelet" args="load sensor_model/RayCastingNodelet sensor_model_manager" output="screen">
+      <rosparam file="$(find sensor_model)/params/occupancy_grid_map.yaml" />
   </node>
-  
-  <node name="car_publisher" pkg="rviz_visualizer" type="car_publisher" output="screen">
-  </node>
+
+
+  <!-- Car publisher node (assuming this is not a nodelet) -->
+  <node name="car_publisher" pkg="rviz_visualizer" type="car_publisher" output="screen"/>
 
   <!-- Launch RViz for visualization -->
-  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" args="-d $(find sensor_model)/config/preprocessing_config.rviz" />
-    
+  <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" args="-d $(find sensor_model)/config/preprocessing_config.rviz"/>
 
 </launch>
-
 
 

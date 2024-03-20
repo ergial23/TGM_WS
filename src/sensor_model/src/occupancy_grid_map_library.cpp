@@ -80,18 +80,13 @@ void OccupancyGridMapLibrary::setCellValue(double wx, double wy, unsigned char v
     }
 }
 
- void OccupancyGridMapLibrary::processPointCloudsIfUpdated( bool rawPointCloudUpdated, 
-                                                            bool obstaclePointCloudUpdated,
-                                                            sensor_msgs::PointCloud2::ConstPtr latestRawPointCloud,
+ void OccupancyGridMapLibrary::processPointClouds( sensor_msgs::PointCloud2::ConstPtr latestRawPointCloud,
                                                             sensor_msgs::PointCloud2::ConstPtr latestObstaclePointCloud,
                                                             std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
                                                             std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins){
-    
-    if (rawPointCloudUpdated && obstaclePointCloudUpdated) {
         updateWithPointCloud(latestRawPointCloud, latestObstaclePointCloud, robot_pose_, scan_origin_, obstaclePointCloudAngleBins, rawPointCloudAngleBins);
-        rawPointCloudUpdated = false;
-        obstaclePointCloudUpdated = false;
-    }
+        
+    
  }
  void OccupancyGridMapLibrary::updateWithPointCloud(
         const sensor_msgs::PointCloud2::ConstPtr& rawPointCloud,

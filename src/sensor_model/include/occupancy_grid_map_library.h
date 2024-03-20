@@ -44,12 +44,10 @@ class OccupancyGridMapLibrary{
     std::pair<int, int> mapToGrid(double mx, double my);//
     void raytrace(double x0, double y0, double x1, double y1, int value, nav_msgs::OccupancyGrid& occupancyGrid_);//
     void setCellValue(double wx, double wy, unsigned char value, nav_msgs::OccupancyGrid& occupancyGrid_);//
-    void processPointCloudsIfUpdated( bool rawPointCloudUpdated, 
-                                       bool obstaclePointCloudUpdated,
-                                       sensor_msgs::PointCloud2::ConstPtr latestRawPointCloud,
-                                       sensor_msgs::PointCloud2::ConstPtr latestObstaclePointCloud,
-                                       std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
-                                       std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins);//
+    void processPointClouds( sensor_msgs::PointCloud2::ConstPtr latestRawPointCloud,
+                             sensor_msgs::PointCloud2::ConstPtr latestObstaclePointCloud,
+                             std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
+                             std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins);//
     void updateWithPointCloud( const sensor_msgs::PointCloud2::ConstPtr& rawPointCloud,
                                const sensor_msgs::PointCloud2::ConstPtr& obstaclePointCloud,
                                const geometry_msgs::Pose &robotPose,
