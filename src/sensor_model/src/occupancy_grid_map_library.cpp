@@ -146,7 +146,7 @@ void OccupancyGridMapLibrary::setCellValue(double wx, double wy, unsigned char v
 void OccupancyGridMapLibrary::initializeFreeSpace( std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
                                                    std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins,
                                                    nav_msgs::OccupancyGrid& occupancyGrid_){
-    for (size_t bin_index = 0; bin_index < obstaclePointCloudAngleBins.size(); ++bin_index) {
+    for (size_t bin_index = 0; bin_index < obstaclePointCloudAngleBins.size(); ++bin_index){
             auto &obstacleBin = obstaclePointCloudAngleBins[bin_index];
             auto &rawBin = rawPointCloudAngleBins[bin_index];
 
@@ -158,8 +158,8 @@ void OccupancyGridMapLibrary::initializeFreeSpace( std::vector<std::vector<BinIn
             } else if (obstacleBin.empty()) {
                 end_distance = rawBin.back();
             } else {
-                //end_distance = (obstacleBin.back().range + distance_margin_ < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
-                end_distance = (obstacleBin.back().range < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
+                end_distance = (obstacleBin.back().range + distance_margin_ < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
+                //end_distance = (obstacleBin.back().range < rawBin.back().range) ? rawBin.back() : obstacleBin.back();
             }
 
             raytrace(scan_origin_.position.x, scan_origin_.position.y, end_distance.wx, end_distance.wy, FREE_SPACE, occupancyGrid_);
@@ -199,14 +199,13 @@ void OccupancyGridMapLibrary::fillUnknownCells(std::vector<std::vector<BinInfo>>
             // mark the region as unknown
             if (nextObstacleDistance > distance_margin_ || noFreespacePoint) {
                 auto target = noFreespacePoint ? nextObstacle : *rawDistanceIter;
-                raytrace(source.wx, source.wy, target.wx, target.wy, UNKNOWN,occupancyGrid_);
+                raytrace(source.wx, source.wy, target.wx, target.wy, UNKNOWN, occupancyGrid_);
             }
         }
     }
 }
 void OccupancyGridMapLibrary::fillOccupiedCells(std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
-                                               std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins,
-                                               nav_msgs::OccupancyGrid& occupancyGrid_){
+                                                nav_msgs::OccupancyGrid& occupancyGrid_){
     for (size_t bin_index = 0; bin_index < obstaclePointCloudAngleBins.size(); ++bin_index) {
         auto &obstacleBin = obstaclePointCloudAngleBins[bin_index];
         for (size_t dist_index = 0; dist_index < obstacleBin.size(); ++dist_index) {
@@ -220,7 +219,7 @@ void OccupancyGridMapLibrary::fillOccupiedCells(std::vector<std::vector<BinInfo>
                 // Calculate the distance between the current and the next obstacle point
                 double obstacleDistance = std::hypot(nextSource.wx - source.wx, nextSource.wy - source.wy);
 
-                // If the distance is less than or equal to the margin, fill the interval with LETHAL_OBSTACLE/OCCUPIED
+                // If the distance is less than or equal to the margin, fill the interval with OBSTACLE
                 if (obstacleDistance <= distance_margin_) {
                     raytrace(source.wx, source.wy, nextSource.wx, nextSource.wy, OBSTACLE, occupancyGrid_);
                 }

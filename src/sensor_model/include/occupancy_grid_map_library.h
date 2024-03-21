@@ -63,7 +63,6 @@ class OccupancyGridMapLibrary{
                             std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins,
                             nav_msgs::OccupancyGrid& occupancyGrid_);
     void fillOccupiedCells(std::vector<std::vector<BinInfo>> &obstaclePointCloudAngleBins,
-                           std::vector<std::vector<BinInfo>> &rawPointCloudAngleBins,
                            nav_msgs::OccupancyGrid& occupancyGrid_);
     bool isOccupied(int value);
     bool isUnknown(int8_t value);
