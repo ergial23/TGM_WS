@@ -58,9 +58,10 @@ public:
 
     occupancyGridMap.initializeFreeSpace(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
     occupancyGridMap.fillUnknownCells(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
-    occupancyGridMap.fillOccupiedCells(obstaclePointCloudAngleBins, rawPointCloudAngleBins, occupancyGrid_);
+    occupancyGridMap.fillOccupiedCells(obstaclePointCloudAngleBins, occupancyGrid_);
     //occupancyGridMap.smoothOccupancyGrid(occupancyGrid_);
     publish_msg(occupancyGrid_);
+    
     occupancyGridMap.clearOccupancyGrid(occupancyGrid_);
     
     }
